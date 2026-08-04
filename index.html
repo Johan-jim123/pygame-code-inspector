@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pygame Code Inspector</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #0e1117; color: #ffffff; }
+        textarea { width: 100%; height: 250px; background: #161b22; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 10px; font-family: monospace; }
+        button { background: #238636; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .result { margin-top: 20px; padding: 15px; background: #161b22; border-radius: 6px; border: 1px solid #30363d; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Pygame Code Inspector</h1>
+    <p>Paste your Pygame code below to check health and get a grade!</p>
+    <textarea id="code" placeholder="Paste Python code here..."></textarea><br>
+    <button onclick="inspectCode()">Inspect Code</button>
+
+    <div id="output" class="result" style="display:none;"></div>
+
+    <script>
+        async function inspectCode() {
+            const code = document.getElementById('code').value;
+            const res = await fetch('/api/inspect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+            const out = document.getElementById('output');
+            out.style.display = 'block';
+
+            if (data.error) {
+                out.innerHTML = `<h3 style="color:red">${data.error}</h3>`;
+            } else {
+                out.innerHTML = `
+                    <h2>Score: ${data.score} / 100</h2>
+                    <h3>Grade: ${data.grade}</h3>
+                    <h4>Issues Found:</h4>
+                    <ul>${data.issues.map(i => `<li>${i}</li>`).join('')}</ul>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
