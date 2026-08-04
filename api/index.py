@@ -62,6 +62,7 @@ class CodeChecker(ast.NodeVisitor):
 
 
 @app.route('/api/inspect', methods=['POST'])
+@app.route('/', methods=['POST'])
 def inspect():
     data = request.get_json()
     code = data.get('code', '')
