@@ -1,5 +1,4 @@
-# Pygame AST Code Inspector & Health Analyzer
-
+# Pygame  Code Inspector 
 An automated static analysis tool and web application designed to help Pygame developers detect architectural anti-patterns, performance bottlenecks, and memory leaks without executing untrusted code.
 
 <img width="1147" height="909" alt="Screenshot 2026-07-26 215136" src="https://github.com/user-attachments/assets/2abb3c39-0c29-49f8-90a7-7fb7f072c440" />
