@@ -18,6 +18,33 @@
             padding-bottom: 8px;
         }
 
+        .qol-banner {
+            background: #1a261c;
+            border: 1px solid #00ff66;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .preset-btns {
+            margin-bottom: 10px;
+        }
+
+        .btn-secondary {
+            background: #2a2a2a;
+            color: #00ff66;
+            border: 1px solid #00ff66;
+            padding: 6px 12px;
+            margin-right: 8px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+
+        .btn-secondary:hover {
+            background: #00ff66;
+            color: #000;
+        }
+
         textarea {
             width: 100%;
             height: 220px;
@@ -29,7 +56,7 @@
             box-sizing: border-box;
         }
 
-        button {
+        button.btn-main {
             background: #00ff66;
             color: #000;
             border: none;
@@ -40,7 +67,7 @@
             margin-top: 15px;
         }
 
-        button:hover {
+        button.btn-main:hover {
             background: #fff;
         }
 
@@ -59,20 +86,66 @@
 <body>
 
     <h1>Python Code Checker</h1>
-    <p>Paste your Pygame code below to check for game loop bugs and FPS drops before running it.</p>
+    
+    <div class="qol-banner">
+        <strong>Major QoL Features:</strong> 1-Click Code Presets | CPU Freeze Risk Alerts | Actionable Fix Snippets
+    </div>
+
+    <div class="preset-btns">
+        <span>Quick Test Presets: </span>
+        <button class="btn-secondary" onclick="loadClean()">Load Clean Sample</button>
+        <button class="btn-secondary" onclick="loadBuggy()">Load Buggy Sample</button>
+    </div>
 
     <textarea id="code-input" placeholder="Paste python code here..."></textarea>
     <br>
-    <button onclick="checkCode()">Run Inspector</button>
+    <button class="btn-main" onclick="checkCode()">Run Inspector</button>
 
     <div id="result-box" style="display: none;">
         <h2 id="score-text"></h2>
         <h3 id="grade-text"></h3>
-        <h4>Issues list:</h4>
+        <h4>Issues & Recommended Fixes:</h4>
         <ul id="issues-list"></ul>
     </div>
 
     <script>
+        function loadBuggy() {
+            document.getElementById('code-input').value = 
+`import pygame
+
+# Missing pygame.init()
+screen = pygame.display.set_mode((800, 600))
+
+running = True
+while running:
+    # Unmonitored loop (No event polling)
+    screen.fill((0, 0, 0))
+    pygame.display.flip()
+    # Missing clock.tick()
+`;
+        }
+
+        function loadClean() {
+            document.getElementById('code-input').value = 
+`import pygame
+
+pygame.init()
+screen = pygame.display.set_mode((800, 600))
+clock = pygame.time.Clock()
+
+running = True
+while running:
+    clock.tick(60)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            
+    screen.fill((30, 30, 30))
+    pygame.display.flip()
+
+pygame.quit()`;
+        }
+
         function checkCode() {
             var codeText = document.getElementById('code-input').value;
             
