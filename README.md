@@ -10,6 +10,17 @@ Pygame AST Code Inspector leverages Python's built-in Abstract Syntax Tree (`ast
 
 ---
 
+## Key Quality of Life (QoL) Improvements
+
+1. One-Click Test Presets:
+Preset buttons in the interface let you click Load Clean Sample or Load Buggy Sample to run test code immediately without needing to manually copy-paste snippets.
+
+2. Hardware Strain and CPU Safeguard Warnings:
+The analyzer catches unmonitored infinite loops and missing frame rate limits (`clock.tick()`), explicitly warning developers if a script risks 100% CPU usage or desktop window freezes.
+
+3. Actionable Fix Guidance:
+Lists exact architectural issues (such as missing `pygame.init()`, unhandled `QUIT` events, or unclosed windows) along with specific code fixes needed to fix the script.
+
 Try it!: 
 https://pygamecoden-inspector.vercel.app/
 
