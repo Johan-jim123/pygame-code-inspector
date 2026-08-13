@@ -1,236 +1,71 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Python Code Checker</title>
-    <style>
-        body {
-            background-color: #121212;
-            color: #00ff66;
-            font-family: 'Courier New', monospace;
-            padding: 30px;
-            max-width: 800px;
-            margin: auto;
-        }
+import ast
+from flask import Flask, request, jsonify
 
-        h1 {
-            color: #fff;
-            border-bottom: 2px solid #00ff66;
-            padding-bottom: 8px;
-        }
+app = Flask(__name__)
 
-        .qol-section {
-            background: #1a1a1a;
-            border: 1px solid #00ff66;
-            padding: 12px;
-            margin-bottom: 15px;
-        }
 
-        .qol-title {
-            color: #fff;
-            font-weight: bold;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
+class CodeChecker(ast.NodeVisitor):
+    def __init__(self):
+        self.issues = []
+        self.score = 100
+        self.has_init = False
+        self.has_quit = False
+        self.has_fps_limit = False
 
-        .btn {
-            background: #2a2a2a;
-            color: #00ff66;
-            border: 1px solid #00ff66;
-            padding: 6px 12px;
-            margin-right: 8px;
-            margin-bottom: 6px;
-            cursor: pointer;
-            font-family: monospace;
-            font-size: 13px;
-        }
+    def visit_Call(self, node):
+        # Check for pygame.init()
+        if isinstance(node.func, ast.Attribute):
+            if node.func.attr == 'init' and getattr(node.func.value, 'id', '') == 'pygame':
+                self.has_init = True
+            if node.func.attr == 'quit' and getattr(node.func.value, 'id', '') == 'pygame':
+                self.has_quit = True
+            if node.func.attr == 'tick':
+                self.has_fps_limit = True
+        self.generic_visit(node)
 
-        .btn:hover {
-            background: #00ff66;
-            color: #000;
-        }
+    def analyze(self, code_str):
+        try:
+            tree = ast.parse(code_str)
+            self.visit(tree)
 
-        .btn-main {
-            background: #00ff66;
-            color: #000;
-            border: none;
-            padding: 12px 24px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
+            if not self.has_init:
+                self.issues.append("Missing 'pygame.init()' call.")
+                self.score -= 15
+            if not self.has_quit:
+                self.issues.append("Missing 'pygame.quit()' call.")
+                self.score -= 15
+            if not self.has_fps_limit:
+                self.issues.append("Missing frame rate control ('clock.tick()').")
+                self.score -= 10
 
-        .btn-main:hover {
-            background: #fff;
-        }
+            self.score = max(0, self.score)
 
-        .editor-header {
-            display: flex;
-            justify-content: space-between;
-            color: #888;
-            font-size: 12px;
-            margin-bottom: 4px;
-        }
+            # Grade assignment
+            if self.score >= 90:
+                grade = "A 🌟"
+            elif self.score >= 75:
+                grade = "B 👍"
+            elif self.score >= 60:
+                grade = "C ⚠️"
+            elif self.score >= 40:
+                grade = "D ❌"
+            else:
+                grade = "F 💀"
 
-        textarea {
-            width: 100%;
-            height: 220px;
-            background: #1e1e1e;
-            color: #fff;
-            border: 2px solid #00ff66;
-            padding: 10px;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
+            return {
+                "score": self.score,
+                "grade": grade,
+                "issues": self.issues if self.issues else ["No major issues found! 🎉"]
+            }
+        except SyntaxError as e:
+            return {"error": f"Syntax Error in code: {str(e)}"}
 
-        #result-box {
-            margin-top: 25px;
-            background: #1e1e1e;
-            border: 1px dashed #00ff66;
-            padding: 15px;
-        }
 
-        ul {
-            color: #ff5555;
-            padding-left: 20px;
-        }
-
-        li {
-            margin-bottom: 6px;
-        }
-    </style>
-</head>
-<body>
-
-    <h1>Python Code Checker</h1>
-
-    <!-- QoL Feature 1: Presets & Controls -->
-    <div class="qol-section">
-        <div class="qol-title">QoL Feature 1: Quick Test Presets</div>
-        <button class="btn" onclick="loadClean()">Load Clean Code</button>
-        <button class="btn" onclick="loadBuggy()">Load Buggy Code</button>
-        <button class="btn" onclick="clearCode()">Clear Canvas</button>
-    </div>
-
-    <div class="editor-header">
-        <span>Python Code Editor</span>
-        <span id="line-counter">Lines: 0</span>
-    </div>
-
-    <textarea id="code-input" oninput="updateLineCount()" placeholder="Paste python code here..."></textarea>
-    <br>
-    
-    <button class="btn-main" onclick="checkCode()">Run Inspector</button>
-
-    <div id="result-box" style="display: none;">
-        <h2 id="score-text"></h2>
-        <h3 id="grade-text"></h3>
-        
-        <!-- QoL Feature 2: Copy Report to Clipboard -->
-        <button class="btn" onclick="copyReport()">Copy Report to Clipboard</button>
-
-        <h4>Issues & Recommended Fixes:</h4>
-        <ul id="issues-list"></ul>
-    </div>
-
-    <script>
-        function updateLineCount() {
-            var text = document.getElementById('code-input').value;
-            var lines = text ? text.split('\n').length : 0;
-            document.getElementById('line-counter').innerText = 'Lines: ' + lines;
-        }
-
-        function clearCode() {
-            document.getElementById('code-input').value = '';
-            updateLineCount();
-        }
-
-        function loadBuggy() {
-            document.getElementById('code-input').value = 
-`import pygame
-
-# Missing pygame.init()
-screen = pygame.display.set_mode((800, 600))
-
-running = True
-while running:
-    # Unmonitored loop (No event polling)
-    screen.fill((0, 0, 0))
-    pygame.display.flip()
-    # Missing clock.tick()
-`;
-            updateLineCount();
-        }
-
-        function loadClean() {
-            document.getElementById('code-input').value = 
-`import pygame
-
-pygame.init()
-screen = pygame.display.set_mode((800, 600))
-clock = pygame.time.Clock()
-
-running = True
-while running:
-    clock.tick(60)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-            
-    screen.fill((30, 30, 30))
-    pygame.display.flip()
-
-pygame.quit()`;
-            updateLineCount();
-        }
-
-        function copyReport() {
-            var score = document.getElementById('score-text').innerText;
-            var grade = document.getElementById('grade-text').innerText;
-            var issues = document.getElementById('issues-list').innerText;
-            var report = score + '\n' + grade + '\n\nIssues:\n' + issues;
-            
-            navigator.clipboard.writeText(report);
-            alert('Report copied to clipboard!');
-        }
-
-        function checkCode() {
-            var codeText = document.getElementById('code-input').value;
-            
-            fetch('/api/inspect', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: codeText })
-            })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                var box = document.getElementById('result-box');
-                box.style.display = 'block';
-
-                if (data.error) {
-                    box.innerHTML = '<h3 style="color:red">' + data.error + '</h3>';
-                } else {
-                    document.getElementById('score-text').innerText = 'Score: ' + data.score + ' / 100';
-                    document.getElementById('grade-text').innerText = 'Grade: ' + data.grade;
-
-                    var list = document.getElementById('issues-list');
-                    list.innerHTML = '';
-                    
-                    if (data.issues && data.issues.length > 0) {
-                        data.issues.forEach(function(issue) {
-                            var li = document.createElement('li');
-                            li.innerText = issue;
-                            list.appendChild(li);
-                        });
-                    } else {
-                        var li = document.createElement('li');
-                        li.style.color = '#00ff66';
-                        li.innerText = 'No issues found! Your Pygame code looks clean.';
-                        list.appendChild(li);
-                    }
-                }
-            });
-        }
-    </script>
-</body>
-</html>
+@app.route('/api/inspect', methods=['POST'])
+@app.route('/', methods=['POST'])
+def inspect():
+    data = request.get_json()
+    code = data.get('code', '')
+    checker = CodeChecker()
+    result = checker.analyze(code)
+    return jsonify(result)
