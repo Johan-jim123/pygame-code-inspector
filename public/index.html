@@ -8,7 +8,7 @@
             color: #00ff66;
             font-family: 'Courier New', monospace;
             padding: 30px;
-            max-width: 750px;
+            max-width: 800px;
             margin: auto;
         }
 
@@ -18,31 +18,58 @@
             padding-bottom: 8px;
         }
 
-        .qol-banner {
-            background: #1a261c;
+        .qol-section {
+            background: #1a1a1a;
             border: 1px solid #00ff66;
-            padding: 10px;
+            padding: 12px;
             margin-bottom: 15px;
-            font-size: 13px;
         }
 
-        .preset-btns {
-            margin-bottom: 10px;
+        .qol-title {
+            color: #fff;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 14px;
         }
 
-        .btn-secondary {
+        .btn {
             background: #2a2a2a;
             color: #00ff66;
             border: 1px solid #00ff66;
             padding: 6px 12px;
             margin-right: 8px;
+            margin-bottom: 6px;
             cursor: pointer;
             font-family: monospace;
+            font-size: 13px;
         }
 
-        .btn-secondary:hover {
+        .btn:hover {
             background: #00ff66;
             color: #000;
+        }
+
+        .btn-main {
+            background: #00ff66;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-main:hover {
+            background: #fff;
+        }
+
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 4px;
         }
 
         textarea {
@@ -56,21 +83,6 @@
             box-sizing: border-box;
         }
 
-        button.btn-main {
-            background: #00ff66;
-            color: #000;
-            border: none;
-            padding: 12px 24px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-
-        button.btn-main:hover {
-            background: #fff;
-        }
-
         #result-box {
             margin-top: 25px;
             background: #1e1e1e;
@@ -80,35 +92,59 @@
 
         ul {
             color: #ff5555;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 6px;
         }
     </style>
 </head>
 <body>
 
     <h1>Python Code Checker</h1>
-    
-    <div class="qol-banner">
-        <strong>Major QoL Features:</strong> 1-Click Code Presets | CPU Freeze Risk Alerts | Actionable Fix Snippets
+
+    <!-- QoL Feature 1: Presets & Controls -->
+    <div class="qol-section">
+        <div class="qol-title">QoL Feature 1: Quick Test Presets</div>
+        <button class="btn" onclick="loadClean()">Load Clean Code</button>
+        <button class="btn" onclick="loadBuggy()">Load Buggy Code</button>
+        <button class="btn" onclick="clearCode()">Clear Canvas</button>
     </div>
 
-    <div class="preset-btns">
-        <span>Quick Test Presets: </span>
-        <button class="btn-secondary" onclick="loadClean()">Load Clean Sample</button>
-        <button class="btn-secondary" onclick="loadBuggy()">Load Buggy Sample</button>
+    <div class="editor-header">
+        <span>Python Code Editor</span>
+        <span id="line-counter">Lines: 0</span>
     </div>
 
-    <textarea id="code-input" placeholder="Paste python code here..."></textarea>
+    <textarea id="code-input" oninput="updateLineCount()" placeholder="Paste python code here..."></textarea>
     <br>
+    
     <button class="btn-main" onclick="checkCode()">Run Inspector</button>
 
     <div id="result-box" style="display: none;">
         <h2 id="score-text"></h2>
         <h3 id="grade-text"></h3>
+        
+        <!-- QoL Feature 2: Copy Report to Clipboard -->
+        <button class="btn" onclick="copyReport()">Copy Report to Clipboard</button>
+
         <h4>Issues & Recommended Fixes:</h4>
         <ul id="issues-list"></ul>
     </div>
 
     <script>
+        function updateLineCount() {
+            var text = document.getElementById('code-input').value;
+            var lines = text ? text.split('\n').length : 0;
+            document.getElementById('line-counter').innerText = 'Lines: ' + lines;
+        }
+
+        function clearCode() {
+            document.getElementById('code-input').value = '';
+            updateLineCount();
+        }
+
         function loadBuggy() {
             document.getElementById('code-input').value = 
 `import pygame
@@ -123,6 +159,7 @@ while running:
     pygame.display.flip()
     # Missing clock.tick()
 `;
+            updateLineCount();
         }
 
         function loadClean() {
@@ -144,6 +181,17 @@ while running:
     pygame.display.flip()
 
 pygame.quit()`;
+            updateLineCount();
+        }
+
+        function copyReport() {
+            var score = document.getElementById('score-text').innerText;
+            var grade = document.getElementById('grade-text').innerText;
+            var issues = document.getElementById('issues-list').innerText;
+            var report = score + '\n' + grade + '\n\nIssues:\n' + issues;
+            
+            navigator.clipboard.writeText(report);
+            alert('Report copied to clipboard!');
         }
 
         function checkCode() {
@@ -168,11 +216,18 @@ pygame.quit()`;
                     var list = document.getElementById('issues-list');
                     list.innerHTML = '';
                     
-                    data.issues.forEach(function(issue) {
+                    if (data.issues && data.issues.length > 0) {
+                        data.issues.forEach(function(issue) {
+                            var li = document.createElement('li');
+                            li.innerText = issue;
+                            list.appendChild(li);
+                        });
+                    } else {
                         var li = document.createElement('li');
-                        li.innerText = issue;
+                        li.style.color = '#00ff66';
+                        li.innerText = 'No issues found! Your Pygame code looks clean.';
                         list.appendChild(li);
-                    });
+                    }
                 }
             });
         }
